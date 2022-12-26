@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fangtang.idataservice.mapper.DataSourceMapper">
+
+    <!--保存数据源信息-->
+    <insert id="addDataSource">
+        insert into data_source_tb (data_source_id,data_source_name,data_library_type,data_library_name,interface_ip,interface_port,company_name,company_id,user_id,config_name)
+        values (#{dataSourceId},#{dataSourceName},#{dataLibraryType},#{dataLibraryName},#{interfaceIp},#{interfacePort},#{companyName},#{companyId},#{userId},#{configName})
+    </insert>
+
+    <!--保存表结构-->
+    <select id="saveDataSourceRelationTable">
+        insert into table_structure_tb (table_id,table_name,table_structure,data_source_id)
+        values (#{tableId},#{tableName},#{tableField},#{dataSourceId})
+    </select>
+
+    <!-- 数据源下拉内容结果集 -->
+    <resultMap id="tableMap" type="map">
+        <result property="dataSourceId" column="data_source_id" />
+        <result property="dataSourceName" column="data_source_name" />
+        <collection property="tableList" javaType="java.util.ArrayList" ofType="map" >
+            <result property="tableId" column="table_id" />
+            <result property="tableName" column="table_name" />
+        </collection>
+    </resultMap>
+
+    <!--获取数据源下拉内容-->
+    <select id="getDataSourceTables" resultMap="tableMap">
+        SELECT
+            ds.data_source_id,ds.data_source_name,ts.table_id,ts.table_name
+        FROM
+            data_source_tb ds
+        LEFT JOIN
+            table_structure_tb ts
+        ON
+            ts.data_source_id = ds.data_source_id
+where ds.company_id = #{companyId}
+    </select>
+
+    <!--保存数据集-->
+    <insert id="addDataSet">
+        insert into resources (resource_id,resource_name,resource_desc,resource_info,resource_type,company_name,company_id,keywords,
+                               member_list,create_user,create_time,is_deleted,project_num,publicLevel,use_scene,authorization_method,resource_path)
+        values (#{resourceId},#{resourceName},#{resourceDesc},#{resourceInfo},#{resourceType},#{companyName},#{companyId},#{keywords},
+                #{memberList},#{createUser},#{createTime},#{isDeleted},#{projectNum},#{publicLevel},#{useScene},#{authorizationMethod},#{resourcePath})
+    </insert>
+
+    <!--获取表格对应的数据源编号-->
+    <select id="getDataSourceId" resultType="String">
+        select data_source_id from table_structure_tb where table_id = #{tableId}
+    </select>
+
+    <!--保存数据集与表格关联关系-->
+    <insert id="saveDataSetRelationTable">
+        insert into dataset_relation_table_tb (data_set_id,table_id,data_source_id)
+        values (#{dataSetId},#{tableId},#{dataSourceId})
+    </insert>
+
+    <!--获取数据集列表（条件查询、分页）-->
+    <select id="getDataSetInfoList" resultType="com.fangtang.idataservice.pojo.DataSet">
+        select
+        id,resource_id,resource_name,keywords,resource_type,use_scene,resource_info,publicLevel,project_num,create_time,create_user,update_time,
+        is_deleted,resource_desc,company_name,company_id,member_list,resource_path
+        FROM
+        resources
+        where 1=1
+        <if test="dataSetName != '' and dataSetName != null">
+            and resource_name like "%"#{dataSetName}"%"
+        </if>
+        <if test="dataSetType != '' and dataSetType != null">
+            and resource_type = #{dataSetType}
+        </if>
+        <if test="createUser != '' and createUser != null">
+            and create_user like "%" #{createUser}"%"
+        </if>
+        <if test="createTime != '' and createTime != null">
+            and date_format(create_time,'%Y-%m-%d') = #{createTime}
+        </if>
+        <if test="companyId != '' and companyId != null">
+            and company_id = #{companyId}
+        </if>
+        <if test="scene != '' and scene != null">
+            and use_scene like "%"#{scene}"%"
+        </if>
+    </select>
+
+    <!--获取数据集列表（条件查询、分页）-->
+    <select id="getDataSetInfoListOut" resultType="com.fangtang.idataservice.pojo.DataSet">
+        select
+        id,resource_id,resource_name,keywords,resource_type,use_scene,resource_info,publicLevel,project_num,create_time,create_user,update_time,
+        is_deleted,resource_desc,company_name,company_id,member_list,resource_path
+        FROM
+        resources
+        where 1=1
+        <if test="dataSetName != '' and dataSetName != null">
+            and resource_name like "%"#{dataSetName}"%"
+        </if>
+        <if test="dataSetType != '' and dataSetType != null">
+            and resource_type = #{dataSetType}
+        </if>
+        <if test="createUser != '' and createUser != null">
+            and create_user like "%" #{createUser}"%"
+        </if>
+        <if test="createTime != '' and createTime != null">
+            and date_format(create_time,'%Y-%m-%d') = #{createTime}
+        </if>
+        <if test="companyId != '' and companyId != null">
+            and company_id != #{companyId}
+        </if>
+        <if test="scene != '' and scene != null">
+            and use_scene like "%"#{scene}"%"
+        </if>
+    </select>
+
+    <!-- 数据集详情结果集 -->
+    <resultMap id="dataSourceMap" type="map">
+        <result property="dataSourceName" column="data_source_name" />
+        <result property="dataLibraryType" column="data_library_type" />
+        <result property="dataSourceId" column="data_source_id" />
+        <collection property="tableList" javaType="java.util.ArrayList" ofType="map" >
+            <result property="tableName" column="table_name" />
+            <result property="tableId" column="table_id" />
+            <collection property="tableFiledList" javaType="java.util.ArrayList" ofType="String" >
+                <result property="table_structure" column="table_structure" />
+            </collection>
+        </collection>
+    </resultMap>
+<!--获取数据源信息及表格-->
+    <select id="getDataSourceAndTables" resultMap="dataSourceMap">
+        SELECT
+            ds.data_source_name,ds.data_library_type,ds.data_source_id,ts.table_id,ts.table_name,ts1.table_structure
+        FROM
+            dataset_relation_table_tb dr
+                LEFT JOIN data_source_tb ds
+                          ON ds.data_source_id = dr.data_source_id
+                LEFT JOIN table_structure_tb ts
+                          ON ts.table_id = dr.table_id
+                LEFT JOIN table_structure_tb ts1
+                          ON ts1.table_id = dr.table_id
+        WHERE dr.data_set_id = #{dataSetId}
+    </select>
+
+    <!--获取数据集详情-->
+    <select id="getDataSetDetails" resultType="map">
+        SELECT
+            r.resource_id,r.resource_name,r.publicLevel,r.update_time,r.update_user,r.create_time,r.create_user,r.keywords,r.resource_type,r.authorization_method
+        FROM resources r
+        WHERE r.resource_id = #{dataSetId}
+    </select>
+
+    <!--获取表结构-->
+    <select id="getTableFiled" resultType="String">
+        select table_structure from table_structure_tb where table_id = #{tableId}
+    </select>
+
+    <!--获取排序字段-->
+    <select id="getSortFiled" resultType="map">
+        select sort_type,sort_field from sort_tb where table_id = #{tableId} and data_set_id = #{dataSetId}
+    </select>
+
+    <!--获取主外键字段-->
+    <select id="getKeyFiled" resultType="map">
+        SELECT
+            pf.primary_foreign_filed,ts.table_name,ds.data_library_name
+        FROM
+            table_structure_tb ts
+                LEFT JOIN primary_foreign_relation_tb pf
+                          ON pf.table_id = ts.table_id
+                LEFT JOIN data_source_tb ds
+                          ON ds.data_source_id = ts.data_source_id
+        WHERE ts.table_id = #{tableId} and pf.data_set_id = #{dataSetId}
+    </select>
+
+    <!--删除排序字段-->
+    <delete id="deleteSortFiled">
+        delete from sort_tb where data_set_id = #{dataSetId} and table_id = #{tableId}
+    </delete>
+
+    <!-- 刪除主鍵字段-->
+    <delete id="deleteKeyFiled">
+        delete from primary_foreign_relation_tb where data_set_id = #{dataSetId} and table_id = #{tableId}
+    </delete>
+
+    <!--保存排序字段-->
+    <insert id="saveSortFiled" >
+        insert into sort_tb (sort_type,table_id,sort_field,data_set_id)
+        values (#{sortType},#{tableId},#{tableField},#{dataSetId})
+    </insert>
+
+    <!-- 数据集详情结果集 -->
+    <resultMap id="dataSetListMap" type="map">
+        <result property="companyId" column="company_id" />
+        <result property="companyName" column="company_name" />
+        <collection property="dataSetNameList" javaType="java.util.ArrayList" ofType="map" >
+            <result property="resourceName" column="resource_name" />
+            <result property="resourceId" column="resource_id" />
+        </collection>
+    </resultMap>
+
+    <!--获取数据集名称下拉-->
+    <select id="getDataSetList" resultMap="dataSetListMap">
+        SELECT
+            r1.company_id,r1.company_name,r2.resource_name,r2.resource_id
+        FROM
+            resources r1
+                LEFT JOIN resources r2
+                          ON r2.resource_id = r1.resource_id
+                LEFT JOIN dataset_relation_table_tb d
+                          ON d.data_set_id = r2.resource_id
+        WHERE r1.resource_type = '数据库'
+    </select>
+
+    <!-- 获取数据集下的表结构 -->
+    <resultMap id="tableFiledMap" type="map">
+        <result property="tableId" column="table_id" />
+        <result property="tableName" column="table_name" />
+        <collection property="tableFiledList" javaType="java.util.ArrayList" ofType="String" >
+            <result property="tableStructure" column="table_structure" />
+        </collection>
+    </resultMap>
+
+    <!--获取数据集下的表结构-->
+    <select id="getTableFiledList" resultMap="tableFiledMap">
+        SELECT
+            t1.table_id,t1.table_name,t2.table_structure
+        FROM
+            dataset_relation_table_tb dr
+                LEFT JOIN table_structure_tb t1
+                          ON t1.table_id = dr.table_id
+                LEFT JOIN table_structure_tb t2
+                          ON t2.table_id = t1.table_id
+        WHERE dr.data_set_id = #{resourceId}
+    </select>
+
+
+    <!-- 数据源下拉内容结果集 -->
+    <resultMap id="dataSourceSelect" type="map">
+        <result property="companyName" column="company_name" />
+        <collection property="databaseList" javaType="java.util.ArrayList" ofType="map" >
+            <result property="dataLibraryName" column="data_library_name" />
+            <collection property="tableList" javaType="java.util.ArrayList" ofType="map" >
+                <result property="tableId" column="table_id" />
+                <result property="tableName" column="table_name" />
+            </collection>
+        </collection>
+    </resultMap>
+
+    <!--获取数据源及其下面的库表除自身-->
+    <select id="getDataSources" resultMap="dataSourceSelect">
+        select
+            ds.company_name,d.data_library_name,t.table_id,t.table_name
+        FROM
+            data_source_tb ds
+                LEFT JOIN data_source_tb d
+                          ON d.company_name = ds.company_name
+                LEFT JOIN dataset_relation_table_tb dr
+                          ON dr.data_source_id = d.data_source_id
+                LEFT JOIN table_structure_tb t
+                          ON t.table_id = dr.table_id
+        WHERE ds.data_source_id != #{dataSourceId}
+    </select>
+
+    <!--校验数据库是否已存在-->
+    <select id="checkDataBase" resultType="int">
+        select count(data_source_id) from data_source_tb where interface_ip = #{interfaceIp} and interface_port = #{interfacePort} and data_library_name = #{dataLibraryName}
+    </select>
+
+    <!--获取第三方信息下拉-->
+    <select id="getThirdPartyList" resultType="map">
+        select company_id,company_name,concat_ws(':',server_ip,server_port) as serviceAddress from client_info_tb
+    </select>
+
+    <!--删除数据集基本信息-->
+    <delete id="deleteDataSetInfo">
+        delete from resources where resource_id = #{dataSetId}
+    </delete>
+
+    <!--删除数据集与表的关联信息-->
+    <delete id="deleteDataSetRelationTable">
+        delete from dataset_relation_table_tb where data_set_id = #{dataSetId}
+    </delete>
+
+    <select id="checkClientInfo" resultType="int">
+        SELECT count(company_id)
+        FROM
+            client_info_tb
+        WHERE company_id = #{companyId} and company_name = #{companyName} and server_ip = #{serverIp}
+    </select>
+
+    <!--保存第三方信息-->
+    <insert id="saveClientInfo">
+        insert into client_info_tb(company_id,company_name,server_ip,server_port,client_port,config_name)
+        values (#{companyId},#{companyName},#{serverIp},#{serverPort},#{clientPort},#{configName})
+    </insert>
+</mapper>

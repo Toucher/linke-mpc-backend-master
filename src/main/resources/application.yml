@@ -1,0 +1,56 @@
+## 项目端口
+server:
+  port: 8080
+  servlet:
+    context-path: /idataservice
+
+## 数据源配置
+spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB  #单个文件大小
+      max-request-size: 1024MB #总文件大小
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://10.10.10.71:13306/linkempc?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    username: root
+    password: isafelinkepw@2077
+    #url: jdbc:mysql://121.196.9.79:3306/privacy?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    #username: root
+    #password: car@123
+    hikari:
+      pool-name: DateHikariCP
+      minimum-idle: 5
+      idle-timeout: 100000
+      maximum-pool-size: 10
+      auto-commit: true
+      max-lifetime: 60000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+## 日志打印
+logging:
+  level:
+    com.fangtang.waterenvironment.mapper: info
+  config: classpath:logback-spring.xml
+
+## mybatis 配置
+mybatis:
+  mapper-locations: classpath*:/mapper/*Mapper.xml
+  type-aliases-package: com.fangtang.waterenvironment.pojo
+  configuration:
+    map-underscore-to-camel-case: true
+
+sparksql:
+  jar: /root/sparksql/SparkSQL_plan.jar
+  config:
+    dir: /root/taskService/
+  db:
+    host: 10.10.10.81
+    port: 13306
+    schema: linkempc_sparksql
+    user: root
+    password: isafelinkepw@2077
+
+server-port: 8183
+client-port: 8083

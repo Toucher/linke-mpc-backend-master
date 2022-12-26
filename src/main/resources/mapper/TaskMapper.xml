@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fangtang.idataservice.mapper.TaskMapper">
+
+    <!--获取任务信息列表（条件查询、分页）-->
+    <select id="getTaskInfoList" resultType="com.fangtang.idataservice.pojo.Task">
+        select task_id,task_name,task_data_type,createtime,create_user,task_status,task_describe
+        from task_info_tb
+        where 1=1
+        <if test="taskName != '' and taskName != null">
+            and task_name like "%"#{taskName}"%"
+        </if>
+        <if test="taskDataType != '' and taskDataType != null">
+            and task_data_type = #{taskDataType}
+        </if>
+        <if test="createUser != '' and createUser != null">
+            and create_user = #{createUser}
+        </if>
+        <if test="taskStatus != '' and taskStatus != null">
+            and task_status = #{taskStatus}
+        </if>
+        <if test="createTime != '' and createTime != null">
+            and date_format(createtime,'%Y-%m-%d') = #{createTime}
+        </if>
+    </select>
+
+
+    <!--保存任务信息-->
+    <insert id="saveTaskInfo" >
+        insert into task_info_tb(task_id,task_name,task_data_type,createtime,create_user,task_status,task_describe,sql_words)
+        values (#{taskId},#{taskName},#{taskDataType},#{createtime},#{createUser},#{taskStatus},#{taskDescribe},#{sqlWords})
+    </insert>
+
+    <insert id="saveCalculationId">
+        insert into calculation_relation_task_tb (calculation_id,task_id,role_level)
+        values (#{companyId},#{taskId},#{roleLevel})
+    </insert>
+
+    <!--保存任务与数据源对应关系-->
+    <insert id="saveDataSourceId">
+        insert into task_relation_source_tb (data_source_id,task_id,status)
+        values (#{companyId},#{taskId},#{status})
+    </insert>
+
+    <insert id="saveOutputId">
+        insert into output_relation_task_tb (output_id,task_id)
+        values (#{company_id},#{taskId})
+    </insert>
+
+    <!--获取任务基本信息-->
+    <select id="getTaskInfo" resultType="map">
+        SELECT
+            create_user,createtime,sql_words,task_name,task_describe
+        FROM
+            task_info_tb
+        WHERE task_id = #{taskId}
+    </select>
+
+    <select id="getSourceInfo" resultType="map">
+        SELECT
+            concat_ws(':',ds.interface_ip,ds.interface_port) as ipAddress,ds.config_name,ds.company_name
+        FROM
+            resources r
+                LEFT JOIN dataset_relation_table_tb d
+                          ON d.data_set_id = r.resource_id
+                LEFT JOIN data_source_tb ds
+                          ON ds.data_source_id = d.data_source_id
+        WHERE r.company_id = #{companyId} and r.resource_id = #{dataSetId} and d.table_id= #{tableId}
+    </select>
+
+    <!--保存任务日志-->
+    <insert id="saveTaskLog">
+        insert into tasklog_tb(task_id,log_content)
+        values (#{taskId},#{logContent})
+    </insert>
+
+    <!--获取任务日志记录-->
+    <select id="getTaskServiceLogList" resultType="map">
+        SELECT
+        log_content,createtime
+        FROM
+        tasklog_tb
+        WHERE
+        task_id = #{taskId}
+        <if test="startTime != '' and startTime != null">
+            and unix_timestamp(createtime)*1000 > #{startTime}
+        </if>
+    </select>
+
+    <select id="getSendIpAddress" resultType="map">
+        select client_port,config_name,server_ip from client_info_tb where company_id = #{companyId}
+    </select>
+
+    <!--保存客户端日志-->
+    <insert id="saveClientLog">
+        insert into task_clientlog_tb (task_id,company_id,log_content) values
+        <foreach collection="logs" item="log" separator=",">
+            (#{taskId},#{companyId},#{log})
+        </foreach>
+    </insert>
+
+
+    <!--获取任务日志记录-->
+    <select id="getTaskClientLogList" resultType="map">
+        SELECT
+        log_content,createtime
+        FROM
+        task_clientlog_tb
+        WHERE
+        task_id = #{taskId} and company_id = #{companyId}
+        <if test="startTime != '' and startTime != null">
+            and unix_timestamp(createtime)*1000 > #{startTime}
+        </if>
+    </select>
+
+    <!--获取计算法IP信息及运行顺序-->
+    <select id="getClientSort" resultType="map">
+        SELECT
+            DISTINCT cr.role_level,ci.server_ip,ci.client_port
+        FROM
+            client_info_tb ci
+                LEFT JOIN calculation_relation_task_tb cr
+                          ON cr.calculation_id = ci.company_id
+        WHERE ci.company_id = #{companyId} and cr.task_id = #{taskId}
+    </select>
+
+    <!--删除任务基本信息-->
+    <delete id="deleteTaskInfo">
+        delete from task_info_tb where task_id = #{taskId}
+    </delete>
+
+    <!--删除任务资源方-->
+    <delete id="deleteTaskSource">
+        delete from task_relation_source_tb where task_id = #{taskId}
+    </delete>
+
+    <!--删除任务输出方-->
+    <delete id="deleteTaskOutInput">
+        delete from output_relation_task_tb where task_id = #{taskId}
+    </delete>
+
+    <!--删除任务计算方-->
+    <delete id="deleteTaskCalculation">
+        delete from calculation_relation_task_tb where task_id = #{taskId}
+    </delete>
+
+    <!--删除任务客户端日志-->
+    <delete id="deleteTaskClientLog">
+        delete from task_clientlog_tb where task_id = #{taskId}
+    </delete>
+
+    <!--删除任务服务端日志-->
+    <delete id="deleteTaskServiceLog">
+        delete from tasklog_tb where task_id = #{taskId}
+    </delete>
+
+    <!--获取任务计算方companyId-->
+    <select id="getCompanyIds" resultType="String">
+        SELECT
+            DISTINCT calculation_id
+        FROM
+            calculation_relation_task_tb
+        WHERE task_id = #{taskId}
+    </select>
+
+    <select id="getJiSuanInfo" resultType="map">
+        select distinct calculation_id as copmanyId,role_level as roleLevel from calculation_relation_task_tb
+where task_id = #{taskId}
+    </select>
+
+    <select id="getCalczulationInfo" resultType="map">
+        SELECT
+        distinct cr.role_level,c.company_name,concat_ws(':',c.server_ip,c.client_port) as ipAddress
+        FROM
+        calculation_relation_task_tb cr
+        LEFT JOIN client_info_tb c
+        ON c.company_id = cr.calculation_id
+        WHERE cr.task_id = #{taskId}
+    </select>
+
+    <select id="getOutPutInfo" resultType="map">
+        SELECT
+        c.company_name,concat_ws(':',c.server_ip,c.client_port) as ipAddress
+        FROM
+        output_relation_task_tb r
+        LEFT JOIN client_info_tb c
+        ON c.company_id = r.output_id
+        WHERE r.task_id = #{taskId}
+    </select>
+
+    <resultMap id="dataSetMap" type="map">
+        <result property="companyName" column="company_name" />
+        <result property="dataLibraryType" column="data_library_type" />
+        <result property="dataLibraryName" column="data_library_name" />
+        <result property="ipAddress" column="ipAddress" />
+        <collection property="tableNameList" javaType="java.util.ArrayList" ofType="String" >
+            <result property="tableName" column="table_name" />
+        </collection>
+    </resultMap>
+
+    <select id="getDataSourceInfo" resultMap="dataSetMap">
+        SELECT
+            DISTINCT ds.company_name,ds.data_library_type,ds.data_library_name,concat_ws(':',ds.interface_ip,ds.interface_port) as ipAddress,ts.table_name
+        FROM
+            task_relation_source_tb tr
+                LEFT JOIN data_source_tb ds
+                          ON ds.company_id = tr.data_source_id
+                LEFT JOIN dataset_relation_table_tb dr
+                          ON dr.data_source_id = ds.data_source_id
+                LEFT JOIN table_structure_tb ts
+                          ON ts.table_id = dr.table_id
+        WHERE tr.task_id = #{taskId}
+    </select>
+
+    <!--修改任务状态-->
+    <update id="updateTaskStatus">
+        update task_info_tb set task_status = #{status} where task_id = #{taskId}
+    </update>
+</mapper>
