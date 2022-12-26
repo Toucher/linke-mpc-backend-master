@@ -18,13 +18,6 @@ class IdataserviceApplicationTests {
     @Test
     void contextLoads() throws IOException {
 
-        int pages = 0;
-        int num1 = 120 % 10;
-        if (num1 == 0){
-            pages = 120 / 10;
-        }else {
-            pages = 120 / 9 + 1;
-        }
-        System.out.println(pages);
+        System.out.println("提交测试。。。");
     }
 }
