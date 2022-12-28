@@ -2,12 +2,15 @@ package com.fangtang.idataservice.controller;
 
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
+import com.fangtang.idataservice.IdataserviceApplication;
 import com.fangtang.idataservice.mapper.TaskMapper;
 import com.fangtang.idataservice.pojo.Result;
 import com.fangtang.idataservice.pojo.Task;
 import com.fangtang.idataservice.service.TaskService;
 import com.fangtang.idataservice.utils.JsonUtils;
 import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -23,6 +26,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/task")
 public class TaskController {
+
+    private final static Logger logger = LoggerFactory.getLogger(IdataserviceApplication.class);
     
     @Resource
     private TaskService taskService;
@@ -38,8 +43,14 @@ public class TaskController {
     @PostMapping("/addTask")
     @CrossOrigin
     public String addTask(@RequestBody Map<String,Object> map){
-        taskService.addTask(map);
-        return JSON.toJSONString(Result.success(200,"新增成功"));
+        try {
+            taskService.addTask(map);
+            return JSON.toJSONString(Result.success(200,"新增成功"));
+        }catch (Exception e){
+            logger.error("创建任务异常：{}",e.toString());
+            return JSON.toJSONString(Result.success(201,"失败"));
+        }
+
     }
 
     @ApiOperation(value = "获取任务详情")

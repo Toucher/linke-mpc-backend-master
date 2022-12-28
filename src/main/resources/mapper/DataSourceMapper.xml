@@ -40,9 +40,11 @@ where ds.company_id = #{companyId}
     <!--保存数据集-->
     <insert id="addDataSet">
         insert into resources (resource_id,resource_name,resource_desc,resource_info,resource_type,company_name,company_id,keywords,
-                               member_list,create_user,create_time,is_deleted,project_num,publicLevel,use_scene,authorization_method,resource_path)
+                               member_list,create_user,create_time,is_deleted,project_num,publicLevel,use_scene,authorization_method,resource_path,
+                               pretreatment_method,authorization_count,authorization_time_slot)
         values (#{resourceId},#{resourceName},#{resourceDesc},#{resourceInfo},#{resourceType},#{companyName},#{companyId},#{keywords},
-                #{memberList},#{createUser},#{createTime},#{isDeleted},#{projectNum},#{publicLevel},#{useScene},#{authorizationMethod},#{resourcePath})
+                #{memberList},#{createUser},#{createTime},#{isDeleted},#{projectNum},#{publicLevel},#{useScene},#{authorizationMethod},#{resourcePath},
+                #{pretreatmentMethod},#{authorizationCount},#{authorizationTimeSlot})
     </insert>
 
     <!--获取表格对应的数据源编号-->

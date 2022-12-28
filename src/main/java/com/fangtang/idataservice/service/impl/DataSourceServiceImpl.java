@@ -1,5 +1,6 @@
 package com.fangtang.idataservice.service.impl;
 
+import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -127,6 +128,74 @@ public class DataSourceServiceImpl implements DataSourceService {
                 dataSourceMapper.saveDataSetRelationTable(dataSetId,dataSourceId,tableId);//保存数据集与表格关联关系
             }
         }
+
+        JSONObject jsonObject = new JSONObject();
+        if ("mysql".equals(map.get("resource_type"))){
+            Map<String,Object> map1 = new HashMap<>();
+            map1.put("role","");
+            map1.put("dataset_type","");
+            map1.put("host","");
+            map1.put("user","");
+            map1.put("password","");
+            map1.put("database","");
+            map1.put("table","");
+            map1.put("target_fields","");
+            map1.put("excluding_fields","");
+            map1.put("row_threshold","");
+            map1.put("column_threshold","");
+            jsonObject.put("mysql_params",map1);
+            jsonObject.put("data_source","mysql");
+        }else if ("csv".equals(map.get("resource_type"))){
+            Map<String,Object> map2 = new HashMap<>();
+            map2.put("role","");
+            map2.put("abs_path","");
+            map2.put("dataset_type","");
+            map2.put("delimiter","");
+            map2.put("has_header","");
+            map2.put("row_threshold","");
+            map2.put("column_threshold","");
+            jsonObject.put("csv_params",map2);
+            jsonObject.put("data_source","csv");
+        }else if ("excel".equals(map.get("resource_type"))){
+            Map<String,Object> map3 = new HashMap<>();
+            map3.put("role","");
+            map3.put("abs_path","");
+            map3.put("dataset_type","");
+            map3.put("has_header","");
+            map3.put("row_threshold","");
+            map3.put("column_threshold","");
+            jsonObject.put("excel_params",map3);
+            jsonObject.put("data_source","excel");
+        }else if ("json".equals(map.get("resource_type"))){
+            Map<String,Object> map4 = new HashMap<>();
+            map4.put("role","");
+            map4.put("abs_path","");
+            map4.put("dataset_type","");
+            map4.put("data_field","");
+            map4.put("row_threshold","");
+            map4.put("column_threshold","");
+            jsonObject.put("json_params",map4);
+            jsonObject.put("data_source","json");
+        }else if ("api".equals(map.get("resource_type"))){
+            Map<String,Object> map5 = new HashMap<>();
+            map5.put("role","");
+            map5.put("url","");
+            map5.put("dataset_type","");
+            map5.put("key_name","");
+            map5.put("key_value","");
+            map5.put("data_field","");
+            map5.put("row_threshold","");
+            map5.put("column_threshold","");
+            jsonObject.put("api_params",map5);
+            jsonObject.put("data_source","api");
+        }
+        String result1 =
+                HttpRequest.post("http://10.10.10.81:15001/dataio/load_dataset")
+                        .body(jsonObject.toString(), "application/json")
+                        .execute()
+                        .body();
+        logger.info("调用结果：{}",result1);
+
     }
 
     /**
@@ -138,51 +207,56 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String getDataSetInfoList(Map<String, String> map) {
-        Integer currentPage = Integer.parseInt(map.get("currentPage"));
-        Integer pagesize = Integer.parseInt(map.get("pageSize"));
-        if (currentPage <= 0) {
-            currentPage = 1;
-        }
-        if (pagesize <= 0) {
-            pagesize = 10;
-        }
-        Map<String,Object> resultMap = new HashMap<>();
-        if (Integer.parseInt(map.get("ifLocalhost").toString()) == 0){
-            PageHelper.startPage(currentPage, pagesize);
-            Page<DataSet> dataSetInfoList =dataSourceMapper.getDataSetInfoList(map);
-            long total = dataSetInfoList.getTotal();
-            List<DataSet> result = dataSetInfoList.getResult();
-            resultMap.put("size",pagesize);
-            resultMap.put("current",currentPage);
-            long pages = 0;
-            long num1 = total % pagesize;
-            if (num1 == 0){
-                pages = total / pagesize;
-            }else {
-                pages = total / pagesize + 1;
+        try {
+            Integer currentPage = Integer.parseInt(map.get("currentPage"));
+            Integer pagesize = Integer.parseInt(map.get("pageSize"));
+            if (currentPage <= 0) {
+                currentPage = 1;
             }
-            resultMap.put("pages",pages);
-            resultMap.put("total",total);
-            resultMap.put("records",result);
-        }else {
-            PageHelper.startPage(currentPage, pagesize);
-            Page<DataSet> dataSetInfoList =dataSourceMapper.getDataSetInfoListOut(map);
-            long total = dataSetInfoList.getTotal();
-            List<DataSet> result = dataSetInfoList.getResult();
-            resultMap.put("size",pagesize);
-            resultMap.put("current",currentPage);
-            long pages = 0;
-            long num1 = total % pagesize;
-            if (num1 == 0){
-                pages = total / pagesize;
-            }else {
-                pages = total / pagesize + 1;
+            if (pagesize <= 0) {
+                pagesize = 10;
             }
-            resultMap.put("pages",pages);
-            resultMap.put("total",total);
-            resultMap.put("records",result);
+            Map<String,Object> resultMap = new HashMap<>();
+            if (Integer.parseInt(map.get("ifLocalhost").toString()) == 0){
+                PageHelper.startPage(currentPage, pagesize);
+                Page<DataSet> dataSetInfoList =dataSourceMapper.getDataSetInfoList(map);
+                long total = dataSetInfoList.getTotal();
+                List<DataSet> result = dataSetInfoList.getResult();
+                resultMap.put("size",pagesize);
+                resultMap.put("current",currentPage);
+                long pages = 0;
+                long num1 = total % pagesize;
+                if (num1 == 0){
+                    pages = total / pagesize;
+                }else {
+                    pages = total / pagesize + 1;
+                }
+                resultMap.put("pages",pages);
+                resultMap.put("total",total);
+                resultMap.put("records",result);
+            }else {
+                PageHelper.startPage(currentPage, pagesize);
+                Page<DataSet> dataSetInfoList =dataSourceMapper.getDataSetInfoListOut(map);
+                long total = dataSetInfoList.getTotal();
+                List<DataSet> result = dataSetInfoList.getResult();
+                resultMap.put("size",pagesize);
+                resultMap.put("current",currentPage);
+                long pages = 0;
+                long num1 = total % pagesize;
+                if (num1 == 0){
+                    pages = total / pagesize;
+                }else {
+                    pages = total / pagesize + 1;
+                }
+                resultMap.put("pages",pages);
+                resultMap.put("total",total);
+                resultMap.put("records",result);
+            }
+            return JSON.toJSONString(Result.success(200,"成功",resultMap));
+        }catch (Exception e){
+            logger.error("获取数据集列表（条件查询、分页）异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
-        return JSON.toJSONString(Result.success(200,"成功",resultMap));
     }
 
     /**
@@ -194,22 +268,25 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String getDataSetDetails(Map<String, String> map) {
-        String dataSetId = map.get("dataSetId");
-        logger.info("dataSetId====>"+dataSetId);
-        Map<String,Object> dataSetInfo = dataSourceMapper.getDataSetDetails(dataSetId);
-        logger.info("dataSetInfo====>"+dataSetInfo);
-        ArrayList<Map<String,Object>> sourceInfo = dataSourceMapper.getDataSourceAndTables(dataSetId);
-        logger.info("sourceInfo"+sourceInfo);
-        for (Map<String, Object> stringObjectMap : sourceInfo) {
-            ArrayList<Map<String,Object>> tableList = (ArrayList<Map<String, Object>>) stringObjectMap.get("tableList");
-            for (Map<String, Object> objectMap : tableList) {
-                ArrayList<String> tableFiledList = (ArrayList<String>) objectMap.get("tableFiledList");
-             String[] split = tableFiledList.get(0).split("#");
-                objectMap.put("tableFiledList",split);
+        try {
+            String dataSetId = map.get("dataSetId");
+            Map<String,Object> dataSetInfo = dataSourceMapper.getDataSetDetails(dataSetId);
+            ArrayList<Map<String,Object>> sourceInfo = dataSourceMapper.getDataSourceAndTables(dataSetId);
+            for (Map<String, Object> stringObjectMap : sourceInfo) {
+                ArrayList<Map<String,Object>> tableList = (ArrayList<Map<String, Object>>) stringObjectMap.get("tableList");
+                for (Map<String, Object> objectMap : tableList) {
+                    ArrayList<String> tableFiledList = (ArrayList<String>) objectMap.get("tableFiledList");
+                    String[] split = tableFiledList.get(0).split("#");
+                    objectMap.put("tableFiledList",split);
+                }
             }
+            dataSetInfo.put("dataSourceList",sourceInfo);
+            return JSON.toJSONString(Result.success(200,"成功",dataSetInfo));
+        }catch (Exception e){
+            logger.error("获取数据集详情异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
-        dataSetInfo.put("dataSourceList",sourceInfo);
-        return JSON.toJSONString(Result.success(200,"",dataSetInfo));
+
     }
 
     /**
@@ -221,20 +298,26 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String getDataSetTableDetails(Map<String, String> map) {
-        String tableId = map.get("tableId");
-        String dataSetId = map.get("dataSetId");
-        String filedStr = dataSourceMapper.getTableFiled(tableId);
-        Map<String,Object> resultMap = new HashMap<>();
-        if (filedStr != null && filedStr != ""){
-            String[] fileds = filedStr.split("#");
-            resultMap.put("fileds",fileds);
-        }
-        ArrayList<Map<String,Object>> sortFileds = dataSourceMapper.getSortFiled(dataSetId,tableId);
-        ArrayList<Map<String,Object>> keyFileds = dataSourceMapper.getKeyFiled(dataSetId,tableId);
+        try {
+            String tableId = map.get("tableId");
+            String dataSetId = map.get("dataSetId");
+            String filedStr = dataSourceMapper.getTableFiled(tableId);
+            Map<String,Object> resultMap = new HashMap<>();
+            if (filedStr != null && filedStr != ""){
+                String[] fileds = filedStr.split("#");
+                resultMap.put("fileds",fileds);
+            }
+            ArrayList<Map<String,Object>> sortFileds = dataSourceMapper.getSortFiled(dataSetId,tableId);
+            ArrayList<Map<String,Object>> keyFileds = dataSourceMapper.getKeyFiled(dataSetId,tableId);
 
-        resultMap.put("sortFileds",sortFileds);
-        resultMap.put("keyFileds",keyFileds);
-        return JSON.toJSONString(Result.success(200,"",resultMap));
+            resultMap.put("sortFileds",sortFileds);
+            resultMap.put("keyFileds",keyFileds);
+            return JSON.toJSONString(Result.success(200,"成功",resultMap));
+        }catch (Exception e){
+            logger.error("获取数据集下表结构异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
+        }
+
     }
 
     /**
@@ -267,8 +350,14 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String getDataSetList() {
-        ArrayList<Map<String,Object>> dataSetList = dataSourceMapper.getDataSetList();
-        return JSON.toJSONString(Result.success(200,"",dataSetList));
+        try {
+            ArrayList<Map<String,Object>> dataSetList = dataSourceMapper.getDataSetList();
+            return JSON.toJSONString(Result.success(200,"成功",dataSetList));
+        }catch (Exception e){
+            logger.error("获取数据集名称下拉异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
+        }
+
     }
 
     /**
@@ -280,17 +369,22 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String getTableFiledList(Map<String, Object> map) {
-        ArrayList<Map<String,Object>> tableList = dataSourceMapper.getTableFiledList(map.get("resourceId").toString());
-        for (Map<String, Object> map1 : tableList) {
-            ArrayList<String> tableFiledList = (ArrayList<String>) map1.get("tableFiledList");
-            String[] split = tableFiledList.get(0).split("#");
-            tableFiledList.clear();
-            for (String s : split) {
-                tableFiledList.add(s);
+        try {
+            ArrayList<Map<String,Object>> tableList = dataSourceMapper.getTableFiledList(map.get("resourceId").toString());
+            for (Map<String, Object> map1 : tableList) {
+                ArrayList<String> tableFiledList = (ArrayList<String>) map1.get("tableFiledList");
+                String[] split = tableFiledList.get(0).split("#");
+                tableFiledList.clear();
+                for (String s : split) {
+                    tableFiledList.add(s);
+                }
             }
-            logger.info("tableFiledList===>"+tableFiledList);
+            return JSON.toJSONString(Result.success(200,"成功",tableList));
+        }catch (Exception e){
+            logger.error("获取数据集下的表结构异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
-        return JSON.toJSONString(Result.success(200,"",tableList));
+
     }
 
     /**
@@ -316,15 +410,42 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String saveClientInfo(Map<String, Object> map) {
-        int num = dataSourceMapper.checkClientInfo(map);
-        if (num == 0){
-            map.put("serverPort", serverPort);
-            map.put("clientPort", clientPort);
-            //这个端口写死了，实际业务场景需要配置用户数据库端口，不能在这里固定成一样的
-            map.put("configName",map.get("serverIp").toString()+"_12001_linkempc");
-            dataSourceMapper.saveClientInfo(map);
+        try {
+            int num = dataSourceMapper.checkClientInfo(map);
+            if (num == 0){
+                map.put("serverPort", serverPort);
+                map.put("clientPort", clientPort);
+                //这个端口写死了，实际业务场景需要配置用户数据库端口，不能在这里固定成一样的
+                map.put("configName",map.get("serverIp").toString()+"_12001_linkempc");
+                dataSourceMapper.saveClientInfo(map);
+            }
+            return JSON.toJSONString(Result.success(200,"成功"));
+        }catch (Exception e){
+            logger.error("保存第三方信息异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
-        return "200";
+
+    }
+
+    /**
+     * @Author Mr.JIA
+     * @Description //TODO 输出参数
+     * @Date 18:18 2022/12/28
+     * @Param [list]
+     * @return java.lang.String
+     **/
+    @Override
+    public String outputParameters(ArrayList<Map<String, Object>> list) {
+        logger.info("list===> {}",list);
+        for (Map<String, Object> stringObjectMap : list) {
+            System.out.println("task_id====>"+stringObjectMap.get("task_id"));
+            ArrayList<Map<String,Object>> list1 = (ArrayList<Map<String, Object>>) stringObjectMap.get("analysis_res_pics");
+            for (Map<String, Object> objectMap : list1) {
+                System.out.println("name====>"+objectMap.get("name"));
+                System.out.println("content====>"+objectMap.get("content"));
+            }
+        }
+        return null;
     }
 
     /**
@@ -336,9 +457,15 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String getDataSources(Map<String, String> map) {
-        String dataSourceId = map.get("dataSourceId");
-        ArrayList<Map<String,Object>> dataSources = dataSourceMapper.getDataSources(dataSourceId);
-        return JSON.toJSONString(Result.success(200,"",dataSources));
+        try {
+            String dataSourceId = map.get("dataSourceId");
+            ArrayList<Map<String,Object>> dataSources = dataSourceMapper.getDataSources(dataSourceId);
+            return JSON.toJSONString(Result.success(200,"成功",dataSources));
+        }catch (Exception e){
+            logger.error("获取数据源及其下面的库表异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
+        }
+
     }
 
     /**
@@ -362,7 +489,13 @@ public class DataSourceServiceImpl implements DataSourceService {
      **/
     @Override
     public String getThirdPartyList() {
-        ArrayList<Map<String,Object>> thirdPartyList = dataSourceMapper.getThirdPartyList();
-        return JSON.toJSONString(Result.success(200,"",thirdPartyList));
+        try {
+            ArrayList<Map<String,Object>> thirdPartyList = dataSourceMapper.getThirdPartyList();
+            return JSON.toJSONString(Result.success(200,"成功",thirdPartyList));
+        }catch (Exception e){
+            logger.error("获取第三方信息下拉异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
+        }
+
     }
 }

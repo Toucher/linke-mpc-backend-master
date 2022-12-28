@@ -62,26 +62,32 @@ public class TaskServiceImpl implements TaskService {
      **/
     @Override
     public String getTaskInfoList(Map<String, Object> map) {
-        Integer currentPage = Integer.parseInt(map.get("currentPage").toString());
-        Integer pagesize = Integer.parseInt(map.get("pageSize").toString());
-        if (currentPage <= 0) {
-            currentPage = 1;
+        try {
+            Integer currentPage = Integer.parseInt(map.get("currentPage").toString());
+            Integer pagesize = Integer.parseInt(map.get("pageSize").toString());
+            if (currentPage <= 0) {
+                currentPage = 1;
+            }
+            if (pagesize <= 0) {
+                pagesize = 10;
+            }
+            PageHelper.startPage(currentPage, pagesize);
+            Page<Task> dataSetInfoList =taskMapper.getTaskInfoList(map);
+            long total = dataSetInfoList.getTotal();
+            List<Task> result = dataSetInfoList.getResult();
+            for (Task task : result) {
+                ArrayList<Map<String,Object>> calculationList =taskMapper.getJiSuanInfo(task.getTaskId());
+                task.setCalculationList(calculationList);
+            }
+            Map<String,Object> resultMap = new HashMap<>();
+            resultMap.put("total",total);
+            resultMap.put("taskInfoList",result);
+            return JSON.toJSONString(Result.success(200,"成功",resultMap));
+        }catch (Exception e){
+            logger.error("获取任务信息列表（条件查询、分页）异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
-        if (pagesize <= 0) {
-            pagesize = 10;
-        }
-        PageHelper.startPage(currentPage, pagesize);
-        Page<Task> dataSetInfoList =taskMapper.getTaskInfoList(map);
-        long total = dataSetInfoList.getTotal();
-        List<Task> result = dataSetInfoList.getResult();
-        for (Task task : result) {
-            ArrayList<Map<String,Object>> calculationList =taskMapper.getJiSuanInfo(task.getTaskId());
-            task.setCalculationList(calculationList);
-        }
-        Map<String,Object> resultMap = new HashMap<>();
-        resultMap.put("total",total);
-        resultMap.put("taskInfoList",result);
-        return JSON.toJSONString(Result.success(200,"",resultMap));
+
     }
 
     /**
@@ -470,15 +476,21 @@ public class TaskServiceImpl implements TaskService {
      **/
     @Override
     public String getTaskDetails(Map<String, Object> map) {
-        String taskId = (String) map.get("taskId");
-        Map<String,Object> taskInfo = taskMapper.getTaskInfo(taskId);
-        ArrayList<Map<String,Object>> calculationInfo = taskMapper.getCalczulationInfo(taskId);
-        ArrayList<Map<String,Object>> outPutInfo = taskMapper.getOutPutInfo(taskId);
-        ArrayList<Map<String,Object>> dataSourceInfo = taskMapper.getDataSourceInfo(taskId);
-        taskInfo.put("calculationInfo",calculationInfo);
-        taskInfo.put("dataSourceInfo",dataSourceInfo);
-        taskInfo.put("outPutInfo",outPutInfo);
-        return JSON.toJSONString(Result.success(200,"",taskInfo));
+        try {
+            String taskId = (String) map.get("taskId");
+            Map<String,Object> taskInfo = taskMapper.getTaskInfo(taskId);
+            ArrayList<Map<String,Object>> calculationInfo = taskMapper.getCalczulationInfo(taskId);
+            ArrayList<Map<String,Object>> outPutInfo = taskMapper.getOutPutInfo(taskId);
+            ArrayList<Map<String,Object>> dataSourceInfo = taskMapper.getDataSourceInfo(taskId);
+            taskInfo.put("calculationInfo",calculationInfo);
+            taskInfo.put("dataSourceInfo",dataSourceInfo);
+            taskInfo.put("outPutInfo",outPutInfo);
+            return JSON.toJSONString(Result.success(200,"成功",taskInfo));
+        }catch (Exception e){
+            logger.error("获取任务详情异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
+        }
+
     }
 
     /**
@@ -490,14 +502,19 @@ public class TaskServiceImpl implements TaskService {
      **/
     @Override
     public String getTaskServiceLogList(Map<String, String> map) {
-        ArrayList<Map<String,Object>> logList = taskMapper.getTaskServiceLogList(map);
-        logger.info("logList====>"+logList);
-        if (logList.size() > 0){
-            if ("执行完成".equals(logList.get(logList.size() - 1).get("log_content")) || "jar包运行失败".equals(logList.get(logList.size() - 1).get("log_content"))){
-                return JSON.toJSONString(Result.success(202,"",logList));
+        try {
+            ArrayList<Map<String,Object>> logList = taskMapper.getTaskServiceLogList(map);
+            if (logList.size() > 0){
+                if ("执行完成".equals(logList.get(logList.size() - 1).get("log_content")) || "jar包运行失败".equals(logList.get(logList.size() - 1).get("log_content"))){
+                    return JSON.toJSONString(Result.success(202,"",logList));
+                }
             }
+            return JSON.toJSONString(Result.success(200,"成功",logList));
+        }catch (Exception e){
+            logger.error("获取任务日志记录异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
-        return JSON.toJSONString(Result.success(200,"",logList));
+
     }
 
     /**
@@ -509,8 +526,9 @@ public class TaskServiceImpl implements TaskService {
      **/
     @Override
     public String saveClientLog(Map<String, Object> map) {
-        logger.info("保存客户端日志请求参数："+map);
+    try {
         String companyId = (String) map.get("companyId");
+
         String taskId = (String) map.get("taskId");
         ArrayList<String> logs = (ArrayList<String>) map.get("logs");
 
@@ -521,13 +539,15 @@ public class TaskServiceImpl implements TaskService {
                 end = logs.size();
             }
             List<String> subList = logs.subList(start, end);
-            logger.info(taskId + "---------" + companyId + "---------" + subList);
             int num = taskMapper.saveClientLog(taskId, companyId, logs.subList(start, end));
-            System.out.println("日志保存结果："+num);
             start = end;
         }
-        logger.info("日志保存成功");
-        return "日志保存成功";
+        return JSON.toJSONString(Result.success(200,"成功"));
+    }catch (Exception e){
+        logger.error("保存客户端日志异常：{}",e.toString());
+        return JSON.toJSONString(Result.error(201,"失败"));
+    }
+
     }
 
     /**
@@ -539,24 +559,25 @@ public class TaskServiceImpl implements TaskService {
      **/
     @Override
     public String getTaskClientLogList(Map<String, String> map) {
-        logger.info("客户端请求参数====>"+map);
-        ArrayList<Map<String,Object>> logList = taskMapper.getTaskClientLogList(map);
-        if (logList.size() > 0){
-            if ("执行完成".equals(logList.get(logList.size() - 1).get("log_content")) || "日志获取错误".equals(logList.get(logList.size() - 1).get("log_content")) ){
-                logger.info("返回202----->"+JSON.toJSONString(Result.success(202,"",logList)));
-                return JSON.toJSONString(Result.success(202,"",logList));
+        try {
+            ArrayList<Map<String,Object>> logList = taskMapper.getTaskClientLogList(map);
+            if (logList.size() > 0){
+                if ("执行完成".equals(logList.get(logList.size() - 1).get("log_content")) || "日志获取错误".equals(logList.get(logList.size() - 1).get("log_content")) ){
+                    return JSON.toJSONString(Result.success(202,"",logList));
+                }
             }
-        }
-        if (logList.size() == 0){
-            Map<String,Object> map1 = new HashMap<>();
-            map1.put("createtime",map.get("startTime"));
-            logList.add(map1);
+            if (logList.size() == 0){
+                Map<String,Object> map1 = new HashMap<>();
+                map1.put("createtime",map.get("startTime"));
+                logList.add(map1);
+            }
+
+            return JSON.toJSONString(Result.success(200,"成功",logList));
+        }catch (Exception e){
+            logger.error("获取客户端日志记录异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
 
-        logger.info("--------------------------------------------------------------------------");
-        logger.info("返回200----->"+JSON.toJSONString(Result.success(200,"",logList)));
-        logger.info("---------------------------------结--束-----------------------------------------");
-        return JSON.toJSONString(Result.success(200,"",logList));
     }
 
     /**
@@ -568,21 +589,27 @@ public class TaskServiceImpl implements TaskService {
      **/
     @Override
     public String getTaskResult(Map<String, Object> map) {
-        Map<String,String> sendIpAddress = taskMapper.getSendIpAddress(map.get("companyId"));
-        Map<String,Object> sendInfo = new HashMap<>();
-        sendInfo.put("taskId",map.get("taskId"));
-        String result1 =
-                HttpRequest.post("http://"+sendIpAddress.get("server_ip")+":"+sendIpAddress.get("client_port")+"/idataclient/getResult")
-                        .body(JSON.toJSONString(sendInfo), "application/json")
-                        .execute()
-                        .body();
-        JSONObject jsonObject = JSONObject.parseObject(result1);
-        if (jsonObject.get("code").toString().equals("200")){
-            taskMapper.updateTaskStatus(map.get("taskId").toString(),"已完成");
-        }else {
-            taskMapper.updateTaskStatus(map.get("taskId").toString(),"异常");
+        try {
+            Map<String,String> sendIpAddress = taskMapper.getSendIpAddress(map.get("companyId"));
+            Map<String,Object> sendInfo = new HashMap<>();
+            sendInfo.put("taskId",map.get("taskId"));
+            String result1 =
+                    HttpRequest.post("http://"+sendIpAddress.get("server_ip")+":"+sendIpAddress.get("client_port")+"/idataclient/getResult")
+                            .body(JSON.toJSONString(sendInfo), "application/json")
+                            .execute()
+                            .body();
+            JSONObject jsonObject = JSONObject.parseObject(result1);
+            if (jsonObject.get("code").toString().equals("200")){
+                taskMapper.updateTaskStatus(map.get("taskId").toString(),"已完成");
+            }else {
+                taskMapper.updateTaskStatus(map.get("taskId").toString(),"异常");
+            }
+            return result1;
+        }catch (Exception e){
+            logger.error("获取任务结果异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
         }
-        return result1;
+
     }
 
     /**
@@ -603,7 +630,6 @@ public class TaskServiceImpl implements TaskService {
                     for (String companyId : companyIds) {
                         Map<String,Object> companyInfo = taskMapper.getClientSort(companyId,taskId);
                         if ("1".equals(companyInfo.get("role_level")+"")){
-                            logger.info("companyInfo===>"+companyInfo);
                             Map<String,Object> sendInfo = new HashMap<>();
                             sendInfo.put("taskId",map.get("taskId"));
                             sendInfo.put("companyId",companyId);
@@ -624,7 +650,6 @@ public class TaskServiceImpl implements TaskService {
                     for (String companyId : companyIds) {
                         Map<String,Object> companyInfo = taskMapper.getClientSort(companyId,taskId);
                         if ("2".equals(companyInfo.get("role_level")+"")){
-                            logger.info("companyInfo===>"+companyInfo);
                             Map<String,Object> sendInfo = new HashMap<>();
                             sendInfo.put("taskId",map.get("taskId"));
                             sendInfo.put("companyId",companyId);
@@ -645,7 +670,6 @@ public class TaskServiceImpl implements TaskService {
                     for (String companyId : companyIds) {
                         Map<String,Object> companyInfo = taskMapper.getClientSort(companyId,taskId);
                         if ("3".equals(companyInfo.get("role_level")+"")){
-                            logger.info("companyInfo===>"+companyInfo);
                             Map<String,Object> sendInfo = new HashMap<>();
                             sendInfo.put("taskId",map.get("taskId"));
                             sendInfo.put("companyId",companyId);
@@ -659,7 +683,6 @@ public class TaskServiceImpl implements TaskService {
                     }
                 }
             }).start();
-
             return JSON.toJSONString(Result.success(200,"任务成功启动"));
         }catch (Exception e){
             logger.error("运行任务异常："+e.toString());

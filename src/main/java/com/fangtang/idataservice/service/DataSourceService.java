@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.fangtang.idataservice.pojo.DataSet;
 import com.fangtang.idataservice.pojo.DataSource;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 
@@ -51,4 +52,6 @@ public interface DataSourceService {
     //保存第三方信息
     String saveClientInfo(Map<String, Object> map);
 
+    //输出参数
+    String outputParameters(ArrayList<Map<String, Object>> list);
 }

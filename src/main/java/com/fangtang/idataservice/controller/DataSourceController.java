@@ -11,10 +11,12 @@ import com.fangtang.idataservice.service.DataSourceService;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,11 +40,9 @@ public class DataSourceController {
     @CrossOrigin
     public String addDataSource(@RequestBody DataSource dataSource){
         try {
-            logger.info("dataSource====>"+dataSource);
             int num = dataSourceService.checkDataBase(dataSource);
             if (num == 0){
                 String interfacePath = "http://"+dataSource.getInterfaceIp()+":"+dataSource.getInterfacePort()+"/idataclient/getTableStructure?name="+dataSource.getConfigName();
-                System.out.println("interfacePath====>"+interfacePath);
                 String result =
                         HttpRequest.get(interfacePath)
                                 .execute()
@@ -51,13 +51,13 @@ public class DataSourceController {
                 JSONObject jsonObject = JSONObject.parseObject(result);
                 dataSourceService.addDataSource(jsonObject,dataSource);
                 /*调用方法生成json,存在服务器某个位置*/
-                return JSON.toJSONString(Result.success(200,"新增成功"));
+                return JSON.toJSONString(Result.success(200,"成功"));
             }else {
                 return JSON.toJSONString(Result.success(201,"该数据库结构已存在"));
             }
         }catch (Exception e){
-            System.out.println("新增数据源异常："+e.toString());
-            return JSON.toJSONString(Result.success(201,"新增失败"));
+            logger.error("新增数据源异常：{}",e.toString());
+            return JSON.toJSONString(Result.success(201,"失败"));
         }
     }
 
@@ -74,10 +74,10 @@ public class DataSourceController {
     public String addDataSet(@RequestBody Map<String,Object> map){
         try {
             dataSourceService.addDataSet(map);
-            return JSON.toJSONString(Result.success(200,"新增成功"));
+            return JSON.toJSONString(Result.success(200,"成功"));
         }catch (Exception e){
-            System.out.println("新增数据集异常："+e.toString());
-            return JSON.toJSONString(Result.success(201,"新增失败"));
+            logger.error("新增数据集异常：{}",e.toString());
+            return JSON.toJSONString(Result.success(201,"失败"));
         }
     }
 
@@ -108,8 +108,14 @@ public class DataSourceController {
     @PostMapping("/updateDataSetTableFiled")
     @CrossOrigin
     public String updateDataSetTableFiled(@RequestBody Map<String,Object> map){
-        dataSourceService.updateDataSetTableFiled(map);
-        return JSON.toJSONString(Result.success(200,"修改成功"));
+        try {
+            dataSourceService.updateDataSetTableFiled(map);
+            return JSON.toJSONString(Result.success(200,"修改成功"));
+        }catch (Exception e){
+            logger.error("修改排序异常：{}",e.toString());
+            return JSON.toJSONString(Result.error(201,"失败"));
+        }
+
     }
 
     @ApiOperation(value = "测试连接")
@@ -172,10 +178,9 @@ public class DataSourceController {
             dataSourceService.deleteDataSet(map.get("dataSetId"));
             return JSON.toJSONString(Result.success(200,"删除成功"));
         }catch (Exception e){
-            logger.error("删除数据集异常："+e.toString());
+            logger.error("删除数据集异常：{}",e.toString());
             return JSON.toJSONString(Result.error(201,"删除失败"));
         }
-
     }
 
     @ApiOperation(value = "保存第三方信息")
@@ -183,6 +188,13 @@ public class DataSourceController {
     @CrossOrigin
     public String saveClientInfo(@RequestBody Map<String,Object> map){
         return dataSourceService.saveClientInfo(map);
+    }
+
+    @ApiOperation(value = "输出参数")
+    @PostMapping("/outputParameters")
+    @CrossOrigin
+    public String outputParameters(@RequestBody ArrayList<Map<String,Object>> list){
+        return dataSourceService.outputParameters(list);
     }
 
 }
