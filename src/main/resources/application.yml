@@ -54,3 +54,5 @@ sparksql:
 
 server-port: 8183
 client-port: 8083
+
+dataBaseFileUrl: /home/isafelinke/mpc-client/dataBase.json

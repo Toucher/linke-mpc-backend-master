@@ -190,11 +190,4 @@ public class DataSourceController {
         return dataSourceService.saveClientInfo(map);
     }
 
-    @ApiOperation(value = "输出参数")
-    @PostMapping("/outputParameters")
-    @CrossOrigin
-    public String outputParameters(@RequestBody ArrayList<Map<String,Object>> list){
-        return dataSourceService.outputParameters(list);
-    }
-
 }

@@ -294,4 +294,13 @@ where ds.company_id = #{companyId}
         insert into client_info_tb(company_id,company_name,server_ip,server_port,client_port,config_name)
         values (#{companyId},#{companyName},#{serverIp},#{serverPort},#{clientPort},#{configName})
     </insert>
+
+    <!--获取数据库信息-->
+    <select id="getDataBaseUrl" resultType="map">
+        select interface_ip,config_name,table_name,table_structure
+        from data_source_tb ds
+                 LEFT JOIN table_structure_tb ts
+                           ON ts.data_source_id = ds.data_source_id
+        WHERE ts.table_id = #{tableId}
+    </select>
 </mapper>

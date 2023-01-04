@@ -19,10 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * *
@@ -43,6 +40,9 @@ public class DataSourceServiceImpl implements DataSourceService {
 
     @Value("${client-port}")
     private String clientPort;
+
+    @Value("${dataBaseFileUrl}")
+    private String dataBaseFileUrl;
 
     /**
      * @Author Mr.JIA
@@ -130,63 +130,91 @@ public class DataSourceServiceImpl implements DataSourceService {
         }
 
         JSONObject jsonObject = new JSONObject();
-        if ("mysql".equals(map.get("resource_type"))){
-            Map<String,Object> map1 = new HashMap<>();
-            map1.put("role","");
-            map1.put("dataset_type","");
-            map1.put("host","");
-            map1.put("user","");
-            map1.put("password","");
-            map1.put("database","");
-            map1.put("table","");
-            map1.put("target_fields","");
-            map1.put("excluding_fields","");
-            map1.put("row_threshold","");
-            map1.put("column_threshold","");
-            jsonObject.put("mysql_params",map1);
-            jsonObject.put("data_source","mysql");
-        }else if ("csv".equals(map.get("resource_type"))){
+        if ("主动方".equals(map.get("participant"))){
+            jsonObject.put("role","active_party");
+        }else if ("被动方".equals(map.get("participant"))){
+            jsonObject.put("role","passive_party");
+        }
+        if ("回归任务".equals(map.get("taskType"))){
+            jsonObject.put("dataset_type","regression");
+        }else if ("分类任务".equals(map.get("taskType"))){
+            jsonObject.put("dataset_type","classification");
+        }
+        jsonObject.put("row_threshold",map.get("rowRatio"));
+        jsonObject.put("column_threshold",map.get("columnRatio"));
+        if ("数据库".equals(map.get("resourceType"))){
+            jsonObject.put("data_source","db");
+            ArrayList<String> tableIds = (ArrayList<String>) map.get("tableIds");
+            for (String tableId : tableIds) {
+                Map<String,Object> dataBaseUrl = dataSourceMapper.getDataBaseUrl(tableId);//获取表格对应的数据源编号
+                Map<String,Object> map1 = new HashMap<>();
+                String table_structure = (String) dataBaseUrl.get("table_structure");
+                String[] split = table_structure.split("#");
+                map1.put("db_type","mysql");
+                map1.put("db_json_path",dataBaseFileUrl);
+                map1.put("db_json_key",dataBaseUrl.get("config_name"));
+                map1.put("table",dataBaseUrl.get("table_name"));
+                map1.put("target_fields",Arrays.asList(split));
+                map1.put("excluding_fields",false);
+                jsonObject.put("db_params",map1);
+                jsonObject.put("api_params",null);
+                jsonObject.put("file_params",null);
+                logger.info("访问路径：{}","http://"+dataBaseUrl.get("interface_ip")+":9090/dataio/load_dataset");
+                String result1 =
+                        HttpRequest.post("http://"+dataBaseUrl.get("interface_ip")+":9090/dataio/load_dataset")
+                                .body(jsonObject.toString(), "application/json")
+                                .execute()
+                                .body();
+                JSONObject jsonObject1 = JSONObject.parseObject(result1);
+                logger.info("样本数量：{}",jsonObject1.get("n_samples"));
+                logger.info("特征数量：{}",jsonObject1.get("n_features"));
+                logger.info("是否包含标签：{}",jsonObject1.get("has_label"));
+                logger.info("数据集关联的参与方角色：{}",jsonObject1.get("role"));
+                logger.info("数据集表头名称：{}",jsonObject1.get("header"));
+                logger.info("数据异常比例：{}",jsonObject1.get("anomaly_rate"));
+                logger.info("重复ID出现比例：{}",jsonObject1.get("id_overlap_rate"));
+                logger.info("行缺失比例：{}",jsonObject1.get("row_missing_rate"));
+                logger.info("列缺失比例：{}",jsonObject1.get("column_missing_rate"));
+                logger.info("数据集质量评分：{}",jsonObject1.get("quality_score"));
+                Map<String,Object> statMap = (Map<String, Object>) jsonObject1.get("stat");
+                Map<String,Object> field1Map = (Map<String, Object>) statMap.get("field1");
+                logger.info("field1 字段缺失率：{}",field1Map.get("missing_rate"));
+                logger.info("field1 字段 top 占比：{}",field1Map.get("top"));
+                logger.info("field1 字段的均值：{}",field1Map.get("mean"));
+                logger.info("field1 字段的四分位数：{}",field1Map.get("quartile"));
+                logger.info("field1 字段的最大值：{}",field1Map.get("max"));
+                logger.info("field1 字段的最小值：{}",field1Map.get("min"));
+                logger.info("field1 字段的标准差：{}",field1Map.get("std"));
+                logger.info("field1 字段的中位数：{}",field1Map.get("median"));
+                Map<String,Object> plotsMap = (Map<String, Object>) statMap.get("plots");
+                Map<String,Object> pearsonMap = (Map<String, Object>) plotsMap.get("pearson");
+                logger.info("皮尔森分析图名称：{}",pearsonMap.get("name"));
+                logger.info("base64 encode 的 image：{}",pearsonMap.get("content"));
+            }
+
+        }else if ("接口".equals(map.get("resourceType"))){
             Map<String,Object> map2 = new HashMap<>();
             map2.put("role","");
-            map2.put("abs_path","");
+            map2.put("url","");
             map2.put("dataset_type","");
-            map2.put("delimiter","");
-            map2.put("has_header","");
+            map2.put("key_name","");
+            map2.put("key_value","");
+            map2.put("data_field","");
             map2.put("row_threshold","");
             map2.put("column_threshold","");
-            jsonObject.put("csv_params",map2);
-            jsonObject.put("data_source","csv");
-        }else if ("excel".equals(map.get("resource_type"))){
+            jsonObject.put("api_params",map2);
+            jsonObject.put("data_source","api");
+        }else if ("文件".equals(map.get("resourceType"))){
             Map<String,Object> map3 = new HashMap<>();
             map3.put("role","");
-            map3.put("abs_path","");
+            map3.put("url","");
             map3.put("dataset_type","");
-            map3.put("has_header","");
+            map3.put("key_name","");
+            map3.put("key_value","");
+            map3.put("data_field","");
             map3.put("row_threshold","");
             map3.put("column_threshold","");
-            jsonObject.put("excel_params",map3);
-            jsonObject.put("data_source","excel");
-        }else if ("json".equals(map.get("resource_type"))){
-            Map<String,Object> map4 = new HashMap<>();
-            map4.put("role","");
-            map4.put("abs_path","");
-            map4.put("dataset_type","");
-            map4.put("data_field","");
-            map4.put("row_threshold","");
-            map4.put("column_threshold","");
-            jsonObject.put("json_params",map4);
-            jsonObject.put("data_source","json");
-        }else if ("api".equals(map.get("resource_type"))){
-            Map<String,Object> map5 = new HashMap<>();
-            map5.put("role","");
-            map5.put("url","");
-            map5.put("dataset_type","");
-            map5.put("key_name","");
-            map5.put("key_value","");
-            map5.put("data_field","");
-            map5.put("row_threshold","");
-            map5.put("column_threshold","");
-            jsonObject.put("api_params",map5);
+            jsonObject.put("api_params",map3);
             jsonObject.put("data_source","api");
         }
         String result1 =
@@ -425,27 +453,6 @@ public class DataSourceServiceImpl implements DataSourceService {
             return JSON.toJSONString(Result.error(201,"失败"));
         }
 
-    }
-
-    /**
-     * @Author Mr.JIA
-     * @Description //TODO 输出参数
-     * @Date 18:18 2022/12/28
-     * @Param [list]
-     * @return java.lang.String
-     **/
-    @Override
-    public String outputParameters(ArrayList<Map<String, Object>> list) {
-        logger.info("list===> {}",list);
-        for (Map<String, Object> stringObjectMap : list) {
-            System.out.println("task_id====>"+stringObjectMap.get("task_id"));
-            ArrayList<Map<String,Object>> list1 = (ArrayList<Map<String, Object>>) stringObjectMap.get("analysis_res_pics");
-            for (Map<String, Object> objectMap : list1) {
-                System.out.println("name====>"+objectMap.get("name"));
-                System.out.println("content====>"+objectMap.get("content"));
-            }
-        }
-        return null;
     }
 
     /**

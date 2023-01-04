@@ -90,4 +90,7 @@ public interface DataSourceMapper {
 
     //保存第三方信息
     void saveClientInfo(Map<String, Object> map);
+
+    //获取数据库信息
+    Map<String, Object> getDataBaseUrl(String tableId);
 }
